@@ -1,0 +1,132 @@
+# Python
+import numpy as np
+import itertools
+import pandas as pd
+import joblib
+from sklearn.ensemble import RandomForestRegressor
+from solver.Parameters.slocum3D import SLOCUM_PARAMS
+from solver.Modeling3d.glider_model_3D import ThreeD_Motion
+
+# --- User choices: set to True to include in iteration ---
+iterate_body_params = True
+iterate_added_mass_params = False   
+iterate_config_params = False
+# ---------------------------------------------------------
+
+# Define parameter grids
+body_params = {
+    'BODY_LEN': np.linspace(1.2, 1.8, 4),
+    'RADIUS': np.linspace(0.09, 0.13, 3),
+}
+added_mass_params = {
+    'MF1': np.linspace(4, 6, 3),
+    'MF2': np.linspace(55, 65, 3),
+    'MF3': np.linspace(65, 75, 3),
+    'J1': np.linspace(3, 5, 3),
+    'J2': np.linspace(10, 14, 3),
+    'J3': np.linspace(9, 13, 3),
+}
+config_params = {
+    'GLIDE_ANGLE': np.linspace(10, 30, 3),
+    'SPEED': np.linspace(0.2, 0.5, 3),
+    'BALLAST_RATE': np.linspace(0.0005, 0.002, 3),
+    'rp2': [0.01, 0.02, 0.03],
+    'rp3': [0.04, 0.05, 0.06],
+    'rb1': [0.0],
+    'rb2': [0.0],
+    'rb3': [0.0],
+    'PHI': [0, 30, 45],
+    'THETA': [10, 25, 40],
+    'PSI': [0.0],
+    'BETA': [0.0, 1.0, 2.0],
+}
+
+# Choose which parameter sets to iterate
+param_grids = []
+param_names = []
+
+if iterate_body_params:
+    param_grids.append(list(body_params.values()))
+    param_names.extend(list(body_params.keys()))
+else:
+    param_grids.append([[v[0]] for v in body_params.values()])
+    param_names.extend(list(body_params.keys()))
+
+if iterate_added_mass_params:
+    param_grids.append(list(added_mass_params.values()))
+    param_names.extend(list(added_mass_params.keys()))
+else:
+    param_grids.append([[v[0]] for v in added_mass_params.values()])
+    param_names.extend(list(added_mass_params.keys()))
+
+if iterate_config_params:
+    param_grids.append(list(config_params.values()))
+    param_names.extend(list(config_params.keys()))
+else:
+    param_grids.append([[v[0]] for v in config_params.values()])
+    param_names.extend(list(config_params.keys()))
+
+# Flatten param_grids for itertools.product
+flat_grids = [g for group in param_grids for g in group]
+combinations = list(itertools.product(*flat_grids))
+
+results = []
+iteration = 0
+
+for combo in combinations:
+    print(f"\nIteration {iteration} | Params: {combo}")
+    iteration += 1
+    param_dict = dict(zip(param_names, combo))
+
+    # Patch SLOCUM_PARAMS for this run
+    for k in body_params.keys():
+        setattr(SLOCUM_PARAMS.GLIDER_CONFIG, k, param_dict[k])
+    for k in added_mass_params.keys():
+        setattr(SLOCUM_PARAMS.GLIDER_CONFIG, k, param_dict[k])
+    for k in config_params.keys():
+        setattr(SLOCUM_PARAMS.VARIABLES, k, param_dict[k])
+
+    class Args:
+        mode = "3D"
+        glider = "slocum"
+        info = False
+        pid = "disable"
+        rudder = "disable"
+        setrudder = 10.0
+        plot = []  # Suppress plotting
+        cycle = 1
+        angle = param_dict['GLIDE_ANGLE']
+        speed = param_dict['SPEED']
+
+    args = Args()
+    sim = ThreeD_Motion(args)
+    sim.set_desired_trajectory()
+
+    perf = {}
+    for idx, name in enumerate(['x', 'y', 'z', 'omega1', 'omega2', 'omega3', 'vel', 'v1', 'v2', 'v3', 'rp1', 'rp2', 'rp3', 'mb', 'phi', 'theta', 'psi']):
+        if idx < sim.solver_array.shape[1]:
+            arr = sim.solver_array[:, idx]
+            perf[f'{name}_mean'] = np.mean(arr)
+            perf[f'{name}_max'] = np.max(arr)
+            perf[f'{name}_min'] = np.min(arr)
+
+    result = {**param_dict, **perf}
+    results.append(result)
+
+df = pd.DataFrame(results)
+perf_cols = [col for col in df.columns if any(s in col for s in ['_mean', '_max', '_min'])]
+target_cols = param_names
+
+joblib.dump(target_cols, "glider_design_target_cols.pkl")
+
+X = df[perf_cols]
+y = df[target_cols]
+
+model = RandomForestRegressor()
+model.fit(X, y)
+
+print("Model trained. You can now predict design parameters from performance metrics.")
+
+# Save the model
+joblib.dump(model, "glider_design_inference_model.pkl")
+print("Model saved to glider_design_inference_model.pkl")
