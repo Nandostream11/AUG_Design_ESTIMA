@@ -1,5 +1,4 @@
 # AUG_Design_ESTIMA
-
 **Machine Learning-Based Parametric Design Estimation Tool for Underwater Vehicles(Gliders)**
 ---
 
@@ -64,7 +63,6 @@ This project reimagines how we approach early-stage AUV conceptual design by usi
 - 🔄 Open dataset loader and preprocessor module
 - 🔄 Future support for **Unity/AUVSim/ROS2-Gazebo** integrations for real-time feedback -->
 
----
 ### Requirements
 
 - Python 3.x
@@ -72,6 +70,7 @@ This project reimagines how we approach early-stage AUV conceptual design by usi
 
 ### 📚 References / Inspirations
 
+- Solver from [Underwater Glider Performance metrics plotter tool](https://github.com/Bhaswanth-A/AUG-Simulator) by Bhaswanth A.
 - ESTIMA (Nonlinear Param Estimation Toolkit)
 - Aerodynamic Design ML Tools (UAV/Drone sector)
 - AIML for Parametric Shape Estimation
@@ -150,5 +149,5 @@ For queries, collaboration, or demo requests:
 📧 anandvk113@gmail.com
 🌐 [LinkedIn](https://www.linkedin.com/in/anandvardhanrbtics/)
 
-🌊 Let’s Redefine Underwater Design Together
-"Designing below the surface with intelligence above it."
+🌊 Let’s Redefine Underwater Design Together \
+"_Designing below the surface with intelligence above it._"
