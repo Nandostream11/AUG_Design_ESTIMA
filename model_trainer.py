@@ -2,9 +2,13 @@
 import numpy as np
 import itertools
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.model_selection import train_test_split
 from solver.Parameters.slocum3D import SLOCUM_PARAMS
 from solver.Modeling3d.glider_model_3D import ThreeD_Motion
+import joblib
 
 # --- User choices: set to True to include in iteration ---
 iterate_body_params = True
@@ -109,11 +113,12 @@ X = df[perf_cols]
 y = df[target_cols]
 
 # Train ML model
+# Define models to test
 model = RandomForestRegressor()
 model.fit(X, y)
 
 print("Model trained. You can now predict design parameters from performance metrics.")
-import joblib
+
 # Save the model
 joblib.dump(model, "detailedglider_design_inference_model.pkl")
 print("Model saved to detailedglider_design_inference_model.pkl")

@@ -115,6 +115,7 @@ python3 model_trainer_lite.py
 python3 params_predictor.py
 ```
 ### Notes
+Add __init__.py file inside the directories(Parameters, Modelling3D, Modelling2D) of solver if not present.
 The tool currently uses a Random Forest regressor; you can swap in other ML models as needed.
 Ensure that the solver and parameter modules are importable from your script locations.
 The model predicts only for the range and combinations of parameters it was trained on.

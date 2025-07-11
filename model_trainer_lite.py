@@ -3,13 +3,17 @@ import numpy as np
 import itertools
 import pandas as pd
 import joblib
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.multioutput import MultiOutputRegressor    #a sklearn wrapper to handle multi-output regression for other models than RandomForestRegressor()
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
 from solver.Parameters.slocum3D import SLOCUM_PARAMS
 from solver.Modeling3d.glider_model_3D import ThreeD_Motion
 
 # --- User choices: set to True to include in iteration ---
 iterate_body_params = True
-iterate_added_mass_params = False   
+iterate_added_mass_params = True   
 iterate_config_params = False
 # ---------------------------------------------------------
 
@@ -72,12 +76,13 @@ combinations = list(itertools.product(*flat_grids))
 
 results = []
 iteration = 0
+total_iterations = len(combinations)
+from tqdm import tqdm
 
-for combo in combinations:
-    print(f"\nIteration {iteration} | Params: {combo}")
-    iteration += 1
+for iteration, combo in enumerate(tqdm(combinations, desc="Training Progress")):
+    print(f"\nIteration {iteration} of {total_iterations} | Params: {combo}")
     param_dict = dict(zip(param_names, combo))
-
+        
     # Patch SLOCUM_PARAMS for this run
     for k in body_params.keys():
         setattr(SLOCUM_PARAMS.GLIDER_CONFIG, k, param_dict[k])
@@ -122,11 +127,73 @@ joblib.dump(target_cols, "glider_design_target_cols.pkl")
 X = df[perf_cols]
 y = df[target_cols]
 
-model = RandomForestRegressor()
-model.fit(X, y)
+# Split data into train and test sets
 
-print("Model trained. You can now predict design parameters from performance metrics.")
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Save the model
-joblib.dump(model, "glider_design_inference_model.pkl")
+models = {
+    "RandomForestRegressor": RandomForestRegressor(),
+    "GradientBoostingRegressor": MultiOutputRegressor(GradientBoostingRegressor()),
+    "LinearRegression": MultiOutputRegressor(LinearRegression())
+}
+
+best_score = float('inf')
+best_model = None
+best_model_name = ""
+
+for name, model in models.items():
+    print(f"\nTraining {name}...")
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    perf_mae = []
+    for i in range(len(X_test)):
+        pred_params = dict(zip(y.columns, y_pred[i]))
+        for k in body_params.keys():
+            setattr(SLOCUM_PARAMS.GLIDER_CONFIG, k, pred_params[k])
+        for k in added_mass_params.keys():
+            setattr(SLOCUM_PARAMS.GLIDER_CONFIG, k, pred_params[k])
+        for k in config_params.keys():
+            setattr(SLOCUM_PARAMS.VARIABLES, k, pred_params[k])
+
+        class Args:
+            mode = "3D"
+            glider = "slocum"
+            info = False
+            pid = "disable"
+            rudder = "disable"
+            setrudder = 10.0
+            plot = []
+            cycle = 1
+            angle = pred_params.get('GLIDE_ANGLE', 20)
+            speed = pred_params.get('SPEED', 0.3)
+        args = Args()
+        sim = ThreeD_Motion(args)
+        sim.set_desired_trajectory()
+
+        perf = {}
+        for idx, fname in enumerate(X.columns):
+            if idx < sim.solver_array.shape[1]:
+                arr = sim.solver_array[:, idx % sim.solver_array.shape[1]]
+                if fname.endswith('_mean'):
+                    perf[fname] = np.mean(arr)
+                elif fname.endswith('_max'):
+                    perf[fname] = np.max(arr)
+                elif fname.endswith('_min'):
+                    perf[fname] = np.min(arr)
+        common_cols = [k for k in X.columns if k in perf]
+        if common_cols:
+            perf_mae.append(mean_absolute_error([X_test.iloc[i][k] for k in common_cols], [perf[k] for k in common_cols]))
+        else:
+            print(f"Warning:{k} No common columns found for iteration {i}")
+    avg_mae = np.mean(perf_mae)
+    print(f"{name} average MAE on solver-evaluated test set: {avg_mae:.4f}")
+
+    if avg_mae < best_score:
+        best_score = avg_mae
+        best_model = model
+        best_model_name = name
+
+print(f"\nBest model: {best_model_name} with MAE: {best_score:.4f}")
+joblib.dump(best_model, "glider_design_inference_model.pkl")
 print("Model saved to glider_design_inference_model.pkl")
