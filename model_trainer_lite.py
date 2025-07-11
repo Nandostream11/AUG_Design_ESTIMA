@@ -8,12 +8,12 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
-from solver.Parameters.slocum3D import SLOCUM_PARAMS
-from solver.Modeling3d.glider_model_3D import ThreeD_Motion
+from solver_2.Parameters.slocum3D import SLOCUM_PARAMS
+from solver_2.Modeling3d.glider_model_3D import ThreeD_Motion
 
 # --- User choices: set to True to include in iteration ---
 iterate_body_params = True
-iterate_added_mass_params = True   
+iterate_added_mass_params = False   
 iterate_config_params = False
 # ---------------------------------------------------------
 
@@ -80,7 +80,7 @@ total_iterations = len(combinations)
 from tqdm import tqdm
 
 for iteration, combo in enumerate(tqdm(combinations, desc="Training Progress")):
-    print(f"\nIteration {iteration} of {total_iterations} | Params: {combo}")
+    print(f"\n Params: {combo}")
     param_dict = dict(zip(param_names, combo))
         
     # Patch SLOCUM_PARAMS for this run

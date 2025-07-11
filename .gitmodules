@@ -1,3 +1,6 @@
 [submodule "solver"]
 	path = solver
 	url = https://github.com/Bhaswanth-A/AUG-Simulator.git
+[submodule "solver_2"]
+	path = solver_2
+	url = https://github.com/Nandostream11/AUG-Simulator.git
