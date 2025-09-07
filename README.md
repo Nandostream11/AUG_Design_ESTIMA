@@ -105,6 +105,10 @@ cd AUG_Design_ESTIMA
 ```bash
 pip install -r requirements.txt
 ```
+or just source the env inside the repo
+```bash
+source AUG_env/bin/activate
+```
 #### 3. **Train the Model:**
 ```sh
 python3 model_trainer_lite.py

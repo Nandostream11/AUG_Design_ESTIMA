@@ -13,3 +13,6 @@
 *.suo
 *.tmp
 *.log
+
+glider_design_inference_model.pkl
+glider_design_target_cols.pkl
