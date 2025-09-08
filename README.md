@@ -110,9 +110,15 @@ git submodule update --init --recursive
 git submodule update --init --remote
 ```
 #### 3. Install Dependencies
-You can either activate the existing virtual env:
+You can create an env and activate it:
 ```bash
-source AUG_env/bin/activate
+python -m venv .venv
+
+# Activate it (Linux/Mac)
+source .venv/bin/activate
+
+# Activate it (Windows PowerShell)
+.venv\Scripts\Activate
 ```
 or create a new virtual environment and install dependencies:
 ```bash
