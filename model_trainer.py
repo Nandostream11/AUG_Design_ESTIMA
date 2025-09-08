@@ -1,4 +1,17 @@
 # Python
+import sys
+import os
+
+# Add repo root
+repo_root = os.path.abspath(os.path.dirname(__file__))
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
+
+# Also add solver_2 root specifically so imports inside submodule work
+solver_root = os.path.join(repo_root, "solver")
+if solver_root not in sys.path:
+    sys.path.insert(0, solver_root)
+
 import numpy as np
 import itertools
 import pandas as pd

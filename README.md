@@ -101,25 +101,38 @@ This project reimagines how we approach early-stage AUV conceptual design by usi
 git clone https://github.com/Nandostream11/AUG_Design_ESTIMA.git
 cd AUG_Design_ESTIMA
 ```
-#### 2. Install Dependencies
+#### 2. Initialize the git submodules
 ```bash
-pip install -r requirements.txt
+git submodule update --init --recursive
 ```
-or just source the env inside the repo
+  ⚠ If you get errors fetching submodules, try:
+```bash
+git submodule update --init --remote
+```
+#### 3. Install Dependencies
+You can either activate the existing virtual env:
 ```bash
 source AUG_env/bin/activate
 ```
-#### 3. **Train the Model:**
+or create a new virtual environment and install dependencies:
+```bash
+pip install -r requirements.txt
+```
+💡 Make sure you are using Python 3.10+ if required by the repo.
+#### 4. **Train the Model:**
 ```sh
 python3 model_trainer_lite.py
 ```
 
-#### 4. Predict Parameters:
+#### 5. Predict Parameters:
 ```sh
 python3 params_predictor.py
 ```
 ### Notes
-Add __init__.py file inside the directories(Parameters, Modelling3D, Modelling2D) of solver if not present.
+1. Since solver_2 is a git submodule, make sure it cloned correctly and contains all code before running Python scripts.
+2. All scripts assume you are running from the repo root (AUG_Design_ESTIMA).
+3. If Python cannot find modules inside solver_2, you may need to ensure sys.path includes the repo root as we discussed.
+
 The tool currently uses a Random Forest regressor; you can swap in other ML models as needed.
 Ensure that the solver and parameter modules are importable from your script locations.
 The model predicts only for the range and combinations of parameters it was trained on.
